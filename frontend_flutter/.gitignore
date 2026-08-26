@@ -52,3 +52,4 @@ assets/models/
 
 # backend
 ../backend_django/venv/
+../backend_django/media/
