@@ -1,0 +1,66 @@
+name: frontend_flutter
+description: "Meetily - AI Meeting Recorder & Summarizer"
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.12.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+  google_fonts: ^6.2.1
+  lucide_icons_flutter: ^3.1.15
+  record: ^7.1.1
+  permission_handler: ^13.0.0
+  provider: ^6.1.5+1
+  path_provider: ^2.1.6
+
+  # Phase 2: Local storage & audio playback
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+  audioplayers: ^6.1.0
+  intl: ^0.19.0
+  http: ^1.4.0
+  path: ^1.9.1
+
+  # Phase 4: Settings persistence
+  shared_preferences: ^2.5.3
+
+  # Phase 5: App icon & splash
+  flutter_launcher_icons: ^0.14.3
+  web_socket_channel: ^3.0.3
+  file_selector: ^1.1.0
+  vosk_flutter: ^0.3.46
+  dio: ^5.11.0
+  archive: ^4.2.0
+  wakelock_plus: ^1.7.0
+  llamadart: ^0.8.20
+  llamadart_llama_cpp_flutter: ^0.0.14
+  connectivity_plus: ^7.3.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  build_runner: ^2.4.13
+  hive_generator: ^2.0.1
+
+dependency_overrides:
+  http: ^1.4.0
+  permission_handler: ^13.0.0
+  archive: ^4.2.0
+
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: "assets/icon/app_icon.png"
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/icon/
+    - assets/models/
