@@ -10,8 +10,9 @@ import '../models/pending_sync_item.dart';
 import '../services/sync_queue_service.dart';
 import '../services/sync_manager.dart';
 import '../services/vosk_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'settings_screen.dart';
 import 'meeting_detail_screen.dart';
-
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -39,6 +40,47 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     
     // Start preloading the Vosk model in the background immediately
     VoskService.instance.preloadModel(_selectedLanguage);
+    
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkFirstLaunch();
+    });
+  }
+
+  Future<void> _checkFirstLaunch() async {
+    final prefs = await SharedPreferences.getInstance();
+    final isFirstLaunch = prefs.getBool('first_launch') ?? true;
+    
+    if (isFirstLaunch) {
+      if (mounted) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (ctx) => AlertDialog(
+            title: const Text('¡Bienvenido a Meetily!'),
+            content: const Text('Para poder transcribir tus reuniones sin conexión a internet, necesitas descargar al menos un modelo de idioma.\n\nPor favor, dirígete a los Ajustes para descargarlo.'),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                },
+                child: const Text('Más tarde'),
+              ),
+              FilledButton(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const SettingsScreen()),
+                  );
+                },
+                child: const Text('Ir a Ajustes'),
+              ),
+            ],
+          ),
+        );
+      }
+      await prefs.setBool('first_launch', false);
+    }
   }
 
   @override

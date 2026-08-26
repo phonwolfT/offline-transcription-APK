@@ -45,6 +45,7 @@ class MeetingDetailScreen extends StatefulWidget {
 
 class _MeetingDetailScreenState extends State<MeetingDetailScreen> {
   String? _liveTranscriptText;
+  final Map<String, GlobalKey> _summaryKeys = {};
 
   Map<String, dynamic>? _buildSummaryData(String? summaryText) {
     if (summaryText == null || summaryText.isEmpty) return null;
@@ -215,8 +216,8 @@ class _MeetingDetailScreenState extends State<MeetingDetailScreen> {
 
     if (!recordingService.isRecording) {
       _periodicSummaryTimer?.cancel();
-      _periodicSummaryTimer = Timer.periodic(const Duration(minutes: 30), (_) {
-        // _generateLocalSummary();
+      _periodicSummaryTimer = Timer.periodic(const Duration(minutes: 10), (_) {
+        _cutBlock();
       });
 
       await recordingService.startRecording(
@@ -450,14 +451,43 @@ class _MeetingDetailScreenState extends State<MeetingDetailScreen> {
     }
   }
 
+  Future<void> _cutBlock() async {
+    if (_liveTranscriptText == null || _liveTranscriptText!.trim().isEmpty) {
+      return;
+    }
+
+    final blockTranscript = _liveTranscriptText!;
+    final recordingService = context.read<RecordingService>();
+    final newSegment = MeetingSegment(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      filePath: recordingService.recordingPath ?? widget.meeting.filePath,
+      transcription: blockTranscript,
+      summary: '⏳ Generando resumen del bloque...',
+      durationSeconds: 600, // Approx 10 mins
+    );
+
+    if (mounted) {
+      setState(() {
+        widget.meeting.segments ??= [];
+        widget.meeting.segments!.add(newSegment);
+        _liveTranscriptText = null;
+      });
+      await context.read<DatabaseService>().updateMeeting(widget.meeting);
+    }
+
+    _generateLocalSummary(newSegment);
+  }
+
   Future<void> _generateLocalSummary(MeetingSegment segment) async {
     if (segment.transcription == null || segment.transcription!.isEmpty) return;
 
     if (mounted) {
       setState(() {
+        segment.summary = '⏳ Generando resumen del bloque...';
         _isProcessing = true;
-        _statusMessage = 'Generating local AI summary for segment...';
+        _statusMessage = 'Generando resumen...';
       });
+      context.read<DatabaseService>().updateMeeting(widget.meeting);
     }
 
     final llmService = LLMService();
@@ -476,9 +506,23 @@ class _MeetingDetailScreenState extends State<MeetingDetailScreen> {
       setState(() {
         segment.summary = summaryText;
         _isProcessing = false;
-        _statusMessage = 'Local summary ready!';
+        _statusMessage = '¡Resumen de bloque completado!';
       });
       context.read<DatabaseService>().updateMeeting(widget.meeting);
+
+      // Auto-scroll al resumen
+      Future.delayed(const Duration(milliseconds: 100), () {
+        if (!mounted) return;
+        final keyId = segment.id ?? segment.hashCode.toString();
+        final key = _summaryKeys[keyId];
+        if (key != null && key.currentContext != null) {
+          Scrollable.ensureVisible(
+            key.currentContext!,
+            duration: const Duration(milliseconds: 500),
+            curve: Curves.easeInOut,
+          );
+        }
+      });
     }
   }
 
@@ -1027,7 +1071,7 @@ class _MeetingDetailScreenState extends State<MeetingDetailScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Session ${index + 1}',
+                    'Bloque ${index + 1}',
                     style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -1040,11 +1084,6 @@ class _MeetingDetailScreenState extends State<MeetingDetailScreen> {
                   ),
                   const Divider(height: 32),
 
-                  if (summaryMap != null) ...[
-                    SummaryView(data: summaryMap),
-                    const Divider(height: 32),
-                  ],
-
                   if (segment.transcription != null &&
                       segment.transcription!.isNotEmpty) ...[
                     const Text(
@@ -1056,6 +1095,20 @@ class _MeetingDetailScreenState extends State<MeetingDetailScreen> {
                     ),
                     const SizedBox(height: 12),
                     ..._buildSegmentTranscriptBubbles(segment.transcription!),
+                  ],
+
+                  if (summaryMap != null) ...[
+                    const Divider(height: 32),
+                    Builder(
+                      builder: (context) {
+                        final keyId = segment.id ?? segment.hashCode.toString();
+                        _summaryKeys[keyId] ??= GlobalKey();
+                        return Container(
+                          key: _summaryKeys[keyId],
+                          child: SummaryView(data: summaryMap),
+                        );
+                      }
+                    ),
                   ],
                 ],
               ),

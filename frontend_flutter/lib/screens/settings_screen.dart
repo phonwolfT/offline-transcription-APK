@@ -214,63 +214,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             },
           ),
 
-          const SizedBox(height: 24),
 
-          // AI Model Section
-          _buildSectionHeader('AI Model', LucideIcons.brain),
-          Card(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  DropdownButtonFormField<String>(
-                    isExpanded: true,
-                    value: settings.aiProvider,
-                    decoration: InputDecoration(
-                      labelText: 'Provider',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      prefixIcon: const Icon(LucideIcons.cpu),
-                    ),
-                    items: const [
-                      DropdownMenuItem(value: 'ollama', child: Text('Ollama (Local)')),
-                      DropdownMenuItem(value: 'openai', child: Text('OpenAI')),
-                      DropdownMenuItem(value: 'claude', child: Text('Anthropic Claude')),
-                      DropdownMenuItem(value: 'groq', child: Text('Groq')),
-                    ],
-                    onChanged: (value) {
-                      if (value != null) settings.setAiProvider(value);
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: _modelController,
-                    decoration: InputDecoration(
-                      labelText: 'Model Name',
-                      hintText: 'e.g., llama3.2, gpt-4o, claude-3-sonnet',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      prefixIcon: const Icon(LucideIcons.sparkles),
-                    ),
-                    onChanged: (value) => settings.setAiModel(value),
-                  ),
-                  if (settings.aiProvider != 'ollama') ...[
-                    const SizedBox(height: 16),
-                    TextField(
-                      controller: _apiKeyController,
-                      decoration: InputDecoration(
-                        labelText: 'API Key',
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                        prefixIcon: const Icon(LucideIcons.key),
-                      ),
-                      obscureText: true,
-                      onChanged: (value) => settings.setApiKey(value),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ),
 
           const SizedBox(height: 24),
 
