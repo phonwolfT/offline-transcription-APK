@@ -29,6 +29,7 @@ dependencies:
 
   # Phase 4: Settings persistence
   shared_preferences: ^2.5.3
+  flutter_secure_storage: ^11.0.0
 
   # Phase 5: App icon & splash
   flutter_launcher_icons: ^0.14.3

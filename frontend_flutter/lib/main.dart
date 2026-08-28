@@ -14,6 +14,7 @@ import 'services/model_download_service.dart';
 import 'models/pending_sync_item.dart';
 import 'services/connectivity_watcher.dart';
 import 'services/sync_manager.dart';
+import 'services/notion_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -33,7 +34,14 @@ void main() async {
   final apiService = ApiService();
   apiService.setBaseUrl(settingsService.backendUrl);
 
-  SyncManager.instance.init(apiService);
+  final notionService = NotionService();
+  await notionService.init();
+
+  SyncManager.instance.init(
+    apiService, 
+    notionService: notionService, 
+    databaseService: databaseService
+  );
 
   runApp(
     MultiProvider(
@@ -45,6 +53,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => WebSocketService(settingsService)),
         ChangeNotifierProvider.value(value: ModelDownloadService.instance),
         ChangeNotifierProvider(create: (_) => ConnectivityWatcher()),
+        Provider.value(value: notionService),
       ],
       child: const MeetilyApp(),
     ),

@@ -32,6 +32,15 @@ class Meeting extends HiveObject {
   @HiveField(8)
   List<MeetingSegment>? segments;
 
+  @HiveField(9, defaultValue: false)
+  bool notionSynced;
+
+  @HiveField(10)
+  String? notionPageId;
+
+  @HiveField(11, defaultValue: 'pending')
+  String notionSyncStatus;
+
   Meeting({
     required this.id,
     required this.title,
@@ -42,6 +51,9 @@ class Meeting extends HiveObject {
     this.summary,
     this.backendMeetingId,
     this.segments,
+    this.notionSynced = false,
+    this.notionPageId,
+    this.notionSyncStatus = 'pending',
   });
 
   String get durationFormatted {

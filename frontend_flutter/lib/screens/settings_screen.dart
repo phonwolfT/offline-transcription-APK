@@ -4,7 +4,8 @@ import 'package:provider/provider.dart';
 import '../services/settings_service.dart';
 import '../services/api_service.dart';
 import '../services/model_download_service.dart';
-
+import '../services/notion_service.dart';
+import '../services/sync_manager.dart';
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
 
@@ -16,18 +17,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
   late TextEditingController _modelController;
   late TextEditingController _apiKeyController;
 
+  late TextEditingController _notionApiKeyController;
+  late TextEditingController _notionDbController;
+
   @override
   void initState() {
     super.initState();
     final settings = context.read<SettingsService>();
     _modelController = TextEditingController(text: settings.aiModel);
     _apiKeyController = TextEditingController(text: settings.apiKey);
+    
+    _notionApiKeyController = TextEditingController();
+    _notionDbController = TextEditingController();
   }
 
   @override
   void dispose() {
     _modelController.dispose();
     _apiKeyController.dispose();
+    _notionApiKeyController.dispose();
+    _notionDbController.dispose();
     super.dispose();
   }
 
@@ -200,6 +209,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
         children: [
 
 
+          // Integrations Section
+          _buildSectionHeader('Integraciones', LucideIcons.link),
+          _buildNotionSection(context),
+
+          const SizedBox(height: 24),
+
           // Vosk Offline Model Section
           _buildSectionHeader('Offline Models (Vosk)', LucideIcons.downloadCloud),
           Consumer<ModelDownloadService>(
@@ -326,6 +341,128 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildNotionSection(BuildContext context) {
+    final notionService = context.watch<NotionService>();
+    final isConfigured = notionService.isConfigured;
+
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(LucideIcons.fileText, size: 20),
+                const SizedBox(width: 8),
+                const Text('Notion', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: isConfigured ? Colors.green.withOpacity(0.1) : Colors.orange.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    isConfigured ? '🟢 Conectado' : '🟠 Sin configurar',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: isConfigured ? Colors.green : Colors.orange,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            if (!isConfigured) ...[
+              TextField(
+                controller: _notionApiKeyController,
+                obscureText: true,
+                decoration: InputDecoration(
+                  labelText: 'Notion API Key',
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _notionDbController,
+                decoration: InputDecoration(
+                  labelText: 'Database ID',
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: () async {
+                    if (_notionApiKeyController.text.isNotEmpty && _notionDbController.text.isNotEmpty) {
+                      await notionService.saveCredentials(
+                        _notionApiKeyController.text,
+                        _notionDbController.text,
+                      );
+                      setState(() {});
+                      _notionApiKeyController.clear();
+                      _notionDbController.clear();
+                    }
+                  },
+                  child: const Text('Guardar configuración'),
+                ),
+              ),
+            ] else ...[
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () async {
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Probando conexión...')));
+                    final success = await notionService.testConnection();
+                    if (!mounted) return;
+                    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                    if (success) {
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('✅ Conexión con Notion exitosa')));
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('❌ No se pudo conectar con Notion')));
+                    }
+                  },
+                  icon: const Icon(LucideIcons.plug2),
+                  label: const Text('Probar conexión'),
+                ),
+              ),
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.tonalIcon(
+                  onPressed: () async {
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Sincronizando con Notion...')));
+                    await SyncManager.instance.processNotionQueue();
+                    if (!mounted) return;
+                    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Sincronización finalizada')));
+                  },
+                  icon: const Icon(LucideIcons.refreshCw),
+                  label: const Text('Sincronizar ahora'),
+                ),
+              ),
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                child: TextButton.icon(
+                  onPressed: () async {
+                    await notionService.clearCredentials();
+                    setState(() {});
+                  },
+                  icon: const Icon(LucideIcons.logOut, color: Colors.red),
+                  label: const Text('Desconectar', style: TextStyle(color: Colors.red)),
+                ),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }

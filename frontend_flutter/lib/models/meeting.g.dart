@@ -26,13 +26,16 @@ class MeetingAdapter extends TypeAdapter<Meeting> {
       summary: fields[6] as String?,
       backendMeetingId: fields[7] as String?,
       segments: (fields[8] as List?)?.cast<MeetingSegment>(),
+      notionSynced: fields[9] == null ? false : fields[9] as bool,
+      notionPageId: fields[10] as String?,
+      notionSyncStatus: fields[11] == null ? 'pending' : fields[11] as String,
     );
   }
 
   @override
   void write(BinaryWriter writer, Meeting obj) {
     writer
-      ..writeByte(9)
+      ..writeByte(12)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -50,7 +53,13 @@ class MeetingAdapter extends TypeAdapter<Meeting> {
       ..writeByte(7)
       ..write(obj.backendMeetingId)
       ..writeByte(8)
-      ..write(obj.segments);
+      ..write(obj.segments)
+      ..writeByte(9)
+      ..write(obj.notionSynced)
+      ..writeByte(10)
+      ..write(obj.notionPageId)
+      ..writeByte(11)
+      ..write(obj.notionSyncStatus);
   }
 
   @override

@@ -53,6 +53,15 @@ class DatabaseService extends ChangeNotifier {
 
   int get meetingCount => _meetings.length;
 
+  List<Meeting> getPendingNotionSyncMeetings() {
+    return _meetings.where((m) => 
+      !m.notionSynced && 
+      (m.notionSyncStatus == 'pending' || m.notionSyncStatus == 'failed') &&
+      m.summary != null && 
+      m.summary!.isNotEmpty
+    ).toList();
+  }
+
   Duration get totalRecordingTime {
     int totalSeconds = 0;
     for (final meeting in _meetings) {

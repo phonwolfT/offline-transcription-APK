@@ -13,6 +13,7 @@ import '../services/api_service.dart';
 import '../services/database_service.dart';
 import '../widgets/audio_player_widget.dart';
 import '../widgets/summary_view.dart';
+import '../services/sync_manager.dart';
 import '../services/recording_service.dart';
 import '../services/llm_service.dart';
 import '../services/api_service.dart';
@@ -505,10 +506,22 @@ class _MeetingDetailScreenState extends State<MeetingDetailScreen> {
     if (mounted) {
       setState(() {
         segment.summary = summaryText;
+        // Si no hay resumen general, usamos este resumen de segmento como el general para Notion
+        if (widget.meeting.summary == null || widget.meeting.summary!.isEmpty) {
+          widget.meeting.summary = summaryText;
+        }
+        
+        // Marcar como no sincronizado para que el SyncManager lo vuelva a procesar
+        widget.meeting.notionSynced = false;
+        widget.meeting.notionSyncStatus = 'pending';
+        
         _isProcessing = false;
         _statusMessage = '¡Resumen de bloque completado!';
       });
       context.read<DatabaseService>().updateMeeting(widget.meeting);
+      
+      // Trigger Notion sync if internet is available
+      SyncManager.instance.processNotionQueue();
 
       // Auto-scroll al resumen
       Future.delayed(const Duration(milliseconds: 100), () {
